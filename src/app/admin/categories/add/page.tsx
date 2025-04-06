@@ -299,7 +299,4 @@ export default function AddCategoryPage() {
             </Button>
           </div>
         </form>
-      </div>
-    </div>
-  );
-} 
+ 
