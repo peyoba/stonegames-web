@@ -25,10 +25,44 @@ interface Category {
   count: number;
 }
 
-// 模拟分类数据 - 实际项目中应该从数据库中读取
-// 这里我们从全局变量中导入，在真实项目中应该使用数据库
-// 注意：这种方式仅用于演示，不适合生产环境
-import { mockCategories } from "../route";
+// 模拟分类数据 - 只在本文件内使用，不再从外部导入
+const mockCategories: Category[] = [
+  {
+    id: "1",
+    name: "益智游戏",
+    nameEn: "Puzzle",
+    icon: "🧩",
+    count: 2,
+  },
+  {
+    id: "2",
+    name: "动作游戏",
+    nameEn: "Action",
+    icon: "🎮",
+    count: 2,
+  },
+  {
+    id: "3",
+    name: "策略游戏",
+    nameEn: "Strategy",
+    icon: "🎲",
+    count: 0,
+  },
+  {
+    id: "4",
+    name: "冒险游戏",
+    nameEn: "Adventure",
+    icon: "🏝️",
+    count: 0,
+  },
+  {
+    id: "5",
+    name: "体育游戏",
+    nameEn: "Sports",
+    icon: "⚽",
+    count: 0,
+  }
+];
 
 /**
  * 验证MongoDB ObjectId的有效性
@@ -79,7 +113,7 @@ export async function GET(
     // 确保返回的分类对象包含id字段（将MongoDB的_id转换为id）
     const result = {
       ...category,
-      id: category._id.toString()
+      id: (category as any)._id.toString()
     };
     
     return NextResponse.json(result)
@@ -164,7 +198,7 @@ export async function PUT(
     // 确保返回的分类对象包含id字段（将MongoDB的_id转换为id）
     const result = {
       ...updatedCategory,
-      id: updatedCategory._id.toString()
+      id: (updatedCategory as any)._id.toString()
     };
     
     return NextResponse.json(result)

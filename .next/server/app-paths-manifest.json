@@ -1,8 +1,6 @@
 {
-  "/admin/login/page": "app/admin/login/page.js",
-  "/admin/dashboard/page": "app/admin/dashboard/page.js",
-  "/admin/settings/page": "app/admin/settings/page.js",
-  "/api/network/route": "app/api/network/route.js",
+  "/api/home/route": "app/api/home/route.js",
   "/page": "app/page.js",
-  "/api/home/route": "app/api/home/route.js"
+  "/admin/dashboard/page": "app/admin/dashboard/page.js",
+  "/admin/login/page": "app/admin/login/page.js"
 }

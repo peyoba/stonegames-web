@@ -312,7 +312,6 @@ export async function DELETE(
   }
 }
 
-// 游戏详情接口
 interface GameDetails {
   id: string;
   title: string;
@@ -335,7 +334,7 @@ interface GameDetails {
 }
 
 // 模拟游戏详情数据
-export const mockGameDetails: GameDetails[] = [
+const mockGameDetails: GameDetails[] = [
   {
     id: "1",
     title: "2048",

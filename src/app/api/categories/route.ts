@@ -25,45 +25,6 @@ interface Category {
   count: number;
 }
 
-// 模拟分类数据
-export const mockCategories: Category[] = [
-  {
-    id: "1",
-    name: "益智游戏",
-    nameEn: "Puzzle",
-    icon: "🧩",
-    count: 2,
-  },
-  {
-    id: "2",
-    name: "动作游戏",
-    nameEn: "Action",
-    icon: "🎮",
-    count: 2,
-  },
-  {
-    id: "3",
-    name: "策略游戏",
-    nameEn: "Strategy",
-    icon: "🎲",
-    count: 0,
-  },
-  {
-    id: "4",
-    name: "冒险游戏",
-    nameEn: "Adventure",
-    icon: "🏝️",
-    count: 0,
-  },
-  {
-    id: "5",
-    name: "体育游戏",
-    nameEn: "Sports",
-    icon: "⚽",
-    count: 0,
-  }
-];
-
 /**
  * 获取所有分类
  * @param request 请求对象

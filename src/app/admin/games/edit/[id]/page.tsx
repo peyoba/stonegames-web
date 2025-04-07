@@ -36,6 +36,52 @@ interface Category {
   count: number;
 }
 
+// API 分类数据接口
+interface ApiCategory {
+  _id: string;
+  name: string;
+  nameEn: string;
+  icon?: string;
+  count?: number;
+}
+
+// API 游戏数据接口
+interface ApiGameDetails {
+  _id: string;
+  title: string;
+  titleEn: string;
+  description: string;
+  descriptionEn: string;
+  longDescription: string;
+  longDescriptionEn: string;
+  imageUrl: string;
+  screenshots: string[];
+  gameUrl: string;
+  categoryId: string | { _id: string };
+  developer: string;
+  releaseDate: string;
+  tags: string[];
+  likes: number;
+  views: number;
+}
+
+// 表单数据接口
+interface FormData {
+  title: string;
+  titleEn: string;
+  description: string;
+  descriptionEn: string;
+  longDescription: string;
+  longDescriptionEn: string;
+  imageUrl: string;
+  screenshots: string[];
+  gameUrl: string;
+  categoryId: string;
+  developer: string;
+  releaseDate: string;
+  tags: string[];
+}
+
 export default function EditGamePage() {
   // 获取路由参数和路由操作对象
   const params = useParams();
@@ -57,14 +103,19 @@ export default function EditGamePage() {
   const [screenshotErrors, setScreenshotErrors] = useState<Record<number, boolean>>({});
   
   // 表单数据
-  const [formData, setFormData] = useState<Partial<GameDetails>>({
+  const [formData, setFormData] = useState<FormData>({
     title: "",
+    titleEn: "",
     description: "",
+    descriptionEn: "",
+    longDescription: "",
+    longDescriptionEn: "",
     imageUrl: "",
     screenshots: [],
     gameUrl: "",
     categoryId: "",
     developer: "",
+    releaseDate: "",
     tags: []
   });
   
@@ -120,10 +171,10 @@ export default function EditGamePage() {
         throw new Error("获取分类失败");
       }
       
-      const data = await response.json();
+      const data: ApiCategory[] = await response.json();
       
       // 正确处理分类数据，确保ID格式正确
-      const formattedCategories = data.map(category => ({
+      const formattedCategories = data.map((category: ApiCategory) => ({
         id: category._id.toString(), // 确保ID是字符串格式
         name: category.name,
         nameEn: category.nameEn,
@@ -161,7 +212,7 @@ export default function EditGamePage() {
         throw new Error(errorData.error || "获取游戏详情失败");
       }
       
-      const game = await response.json();
+      const game: ApiGameDetails = await response.json();
       console.log("获取到的游戏数据:", game);
       
       // 确保categoryId是原始的MongoDB ObjectId字符串格式

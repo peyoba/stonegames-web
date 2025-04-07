@@ -31,6 +31,18 @@ export default function AddGamePage() {
     tags: ""
   });
   
+  // 分类数据接口
+  interface Category {
+    _id: string;
+    name: string;
+    nameEn: string;
+  }
+
+  // 备用分类数据接口
+  interface HomeData {
+    categories: Category[];
+  }
+
   // 分类列表
   const [categories, setCategories] = useState([
     { id: "1", name: "益智游戏", nameEn: "Puzzle" },
@@ -67,7 +79,7 @@ export default function AddGamePage() {
     // 获取分类数据
     fetch("/api/categories")
       .then(res => res.json())
-      .then(data => {
+      .then((data: Category[]) => {
         if (data && data.length > 0) {
           console.log("获取到的分类数据:", data);
           // 获取真实的MongoDB ObjectId
@@ -91,11 +103,11 @@ export default function AddGamePage() {
         // 如果API获取失败，使用备用分类数据
         fetch("/api/home")
           .then(res => res.json())
-          .then(data => {
+          .then((data: HomeData) => {
             if (data.categories && data.categories.length > 0) {
               const validCategories = data.categories
-                .filter(cat => cat._id !== "all") // 排除"all"分类
-                .map(cat => ({
+                .filter((cat: Category) => cat._id !== "all") // 排除"all"分类
+                .map((cat: Category) => ({
                   id: cat._id,
                   name: cat.name,
                   nameEn: cat.nameEn

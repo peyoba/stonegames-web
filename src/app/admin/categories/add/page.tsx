@@ -53,7 +53,7 @@ export default function AddCategoryPage() {
   // 处理表单变化
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev: { name: string; nameEn: string; icon: string }) => ({
       ...prev,
       [name]: value
     }));
@@ -199,12 +199,12 @@ export default function AddCategoryPage() {
                 value={formData.name}
                 onChange={handleChange}
                 required
-                placeholder="例如：益智游戏"
-                style={{ 
-                  width: "100%", 
-                  padding: "8px", 
-                  border: "1px solid #e2e8f0", 
-                  borderRadius: "4px" 
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "4px",
+                  fontSize: "14px"
                 }}
               />
             </div>
@@ -220,42 +220,44 @@ export default function AddCategoryPage() {
                 value={formData.nameEn}
                 onChange={handleChange}
                 required
-                placeholder="例如：Puzzle"
-                style={{ 
-                  width: "100%", 
-                  padding: "8px", 
-                  border: "1px solid #e2e8f0", 
-                  borderRadius: "4px" 
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "4px",
+                  fontSize: "14px"
                 }}
               />
             </div>
 
-            {/* 分类图标 */}
-            <div style={{ gridColumn: "span 2" }}>
+            {/* 图标选择 */}
+            <div style={{ gridColumn: "1 / -1" }}>
               <label style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}>
-                分类图标
+                图标 <span style={{ color: "red" }}>*</span>
               </label>
               <div style={{ 
-                display: "flex", 
-                flexWrap: "wrap", 
-                gap: "10px", 
-                marginBottom: "15px" 
+                display: "grid", 
+                gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))", 
+                gap: "10px",
+                marginTop: "10px"
               }}>
-                {iconOptions.map((icon) => (
+                {iconOptions.map((icon, index) => (
                   <button
-                    key={icon}
+                    key={index}
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, icon }))}
-                    style={{ 
-                      width: "50px", 
-                      height: "50px", 
-                      fontSize: "24px", 
-                      display: "flex", 
-                      alignItems: "center", 
+                    onClick={() => setFormData((prev: { name: string; nameEn: string; icon: string }) => ({ ...prev, icon }))}
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      display: "flex",
+                      alignItems: "center",
                       justifyContent: "center",
-                      border: formData.icon === icon ? "2px solid #2563eb" : "1px solid #e2e8f0",
+                      fontSize: "20px",
+                      border: formData.icon === icon 
+                        ? "2px solid #3b82f6" 
+                        : "1px solid #e5e7eb",
                       borderRadius: "4px",
-                      background: formData.icon === icon ? "#eff6ff" : "white",
+                      backgroundColor: formData.icon === icon ? "#eff6ff" : "white",
                       cursor: "pointer"
                     }}
                   >
@@ -263,40 +265,17 @@ export default function AddCategoryPage() {
                   </button>
                 ))}
               </div>
-              <input
-                type="text"
-                name="icon"
-                value={formData.icon}
-                onChange={handleChange}
-                placeholder="选择或输入图标"
-                style={{ 
-                  width: "100%", 
-                  padding: "8px", 
-                  border: "1px solid #e2e8f0", 
-                  borderRadius: "4px" 
-                }}
-              />
-              <p style={{ 
-                fontSize: "12px", 
-                color: "#6b7280", 
-                marginTop: "5px" 
-              }}>
-                可以点击上方图标或手动输入emoji图标
-              </p>
             </div>
           </div>
 
           {/* 提交按钮 */}
-          <div style={{ marginTop: "30px", textAlign: "center" }}>
-            <Button 
-              type="submit" 
-              disabled={loading}
-              className="w-full md:w-auto"
-              size="lg"
-            >
-              {loading ? "处理中..." : "保存分类"}
-              {!loading && <Save className="ml-2 h-4 w-4" />}
+          <div style={{ marginTop: "20px", textAlign: "right" }}>
+            <Button type="submit" disabled={loading}>
+              {loading ? "正在添加..." : "添加分类"}
             </Button>
           </div>
         </form>
- 
+      </div>
+    </div>
+  );
+} 
