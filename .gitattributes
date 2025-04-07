@@ -11,6 +11,10 @@
 *.otf filter=lfs diff=lfs merge=lfs -text
 *.node filter=lfs diff=lfs merge=lfs -text
 
+# 排除 node_modules 和 .next 目录
+node_modules/** -text
+.next/** -text
+
 # 源代码文件
 *.ts text
 *.js text
