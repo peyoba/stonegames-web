@@ -12,7 +12,7 @@
 *.node filter=lfs diff=lfs merge=lfs -text
 
 # 排除 node_modules 和 .next 目录
-node_modules/** -text
+node_modules/**/*.node filter=lfs diff=lfs merge=lfs -text
 .next/** -text
 
 # 源代码文件
