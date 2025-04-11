@@ -10,22 +10,18 @@ import { Check, ChevronLeft, Loader2, Plus, X } from "lucide-react";
 interface GameDetails {
   id: string;
   title: string;
+  titleEn: string;
   description: string;
+  descriptionEn: string;
+  longDescription: string;
+  longDescriptionEn: string;
   imageUrl: string;
   screenshots: string[];
   gameUrl: string;
   categoryId: string;
-  category?: {
-    id: string;
-    name: string;
-    nameEn: string;
-    icon?: string;
-  };
-  releaseDate: string;
   developer: string;
+  releaseDate: string;
   tags: string[];
-  likes: number;
-  views: number;
 }
 
 interface Category {
@@ -43,26 +39,6 @@ interface ApiCategory {
   nameEn: string;
   icon?: string;
   count?: number;
-}
-
-// API 游戏数据接口
-interface ApiGameDetails {
-  _id: string;
-  title: string;
-  titleEn: string;
-  description: string;
-  descriptionEn: string;
-  longDescription: string;
-  longDescriptionEn: string;
-  imageUrl: string;
-  screenshots: string[];
-  gameUrl: string;
-  categoryId: string | { _id: string };
-  developer: string;
-  releaseDate: string;
-  tags: string[];
-  likes: number;
-  views: number;
 }
 
 // 表单数据接口
@@ -93,7 +69,7 @@ export default function EditGamePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState("");
   const [adminName, setAdminName] = useState("管理员");
   const [categories, setCategories] = useState<Category[]>([]);
@@ -121,6 +97,9 @@ export default function EditGamePage() {
   
   // 标签输入
   const [tagInput, setTagInput] = useState("");
+
+  // 添加游戏详情状态
+  const [gameDetails, setGameDetails] = useState<GameDetails | null>(null);
 
   // 客户端检查登录状态和ID有效性
   useEffect(() => {
@@ -198,54 +177,57 @@ export default function EditGamePage() {
       if (!gameId || gameId === 'undefined' || gameId === 'null') {
         setError("无效的游戏ID");
         setLoading(false);
-        setTimeout(() => {
-          router.push("/admin/games");
-        }, 2000);
         return;
       }
       
-      console.log("获取游戏详情，ID:", gameId);
       const response = await fetch(`/api/games/${gameId}`);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "获取游戏详情失败");
+        throw new Error("获取游戏详情失败");
       }
       
-      const game: ApiGameDetails = await response.json();
-      console.log("获取到的游戏数据:", game);
+      const data = await response.json();
       
-      // 确保categoryId是原始的MongoDB ObjectId字符串格式
-      // 这对于后续更新操作很重要
-      const categoryId = game.categoryId && typeof game.categoryId === 'object' && game.categoryId._id 
-        ? game.categoryId._id.toString() 
-        : (typeof game.categoryId === 'string' ? game.categoryId : "");
-      
+      // 更新表单数据
       setFormData({
-        title: game.title || "",
-        titleEn: game.titleEn || "",
-        description: game.description || "",
-        descriptionEn: game.descriptionEn || "",
-        longDescription: game.longDescription || "",
-        longDescriptionEn: game.longDescriptionEn || "",
-        imageUrl: game.imageUrl || "",
-        screenshots: game.screenshots || [],
-        gameUrl: game.gameUrl || "",
-        categoryId: categoryId, // 使用处理后的categoryId
-        developer: game.developer || "",
-        releaseDate: game.releaseDate || "",
-        tags: game.tags || []
+        title: data.title,
+        titleEn: data.titleEn,
+        description: data.description,
+        descriptionEn: data.descriptionEn,
+        longDescription: data.longDescription,
+        longDescriptionEn: data.longDescriptionEn,
+        imageUrl: data.imageUrl,
+        screenshots: data.screenshots || [],
+        gameUrl: data.gameUrl,
+        categoryId: typeof data.categoryId === 'string' ? data.categoryId : data.categoryId._id,
+        developer: data.developer,
+        releaseDate: data.releaseDate,
+        tags: data.tags || []
+      });
+      
+      // 更新游戏详情
+      setGameDetails({
+        id: data._id,
+        title: data.title,
+        titleEn: data.titleEn,
+        description: data.description,
+        descriptionEn: data.descriptionEn,
+        longDescription: data.longDescription,
+        longDescriptionEn: data.longDescriptionEn,
+        imageUrl: data.imageUrl,
+        screenshots: data.screenshots || [],
+        gameUrl: data.gameUrl,
+        categoryId: typeof data.categoryId === 'string' ? data.categoryId : data.categoryId._id,
+        developer: data.developer,
+        releaseDate: data.releaseDate,
+        tags: data.tags || []
       });
       
       setLoading(false);
     } catch (error) {
       console.error("获取游戏详情错误:", error);
-      setError("获取游戏详情失败，请重试");
+      setError(error instanceof Error ? error.message : "获取游戏详情失败");
       setLoading(false);
-      // 获取失败后，几秒后返回游戏列表
-      setTimeout(() => {
-        router.push("/admin/games");
-      }, 2000);
     }
   };
 
@@ -303,16 +285,14 @@ export default function EditGamePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 表单验证
-    if (!formData.title || !formData.titleEn || !formData.description || !formData.descriptionEn || 
-        !formData.imageUrl || !formData.gameUrl || !formData.categoryId) {
-      setError("请填写完整的游戏信息（标题、简介、图片、游戏链接和分类必填）");
+    if (!gameDetails) {
+      setError("游戏详情不存在");
       return;
     }
     
-    // 验证游戏ID是否有效
-    if (!gameId || gameId === 'undefined' || gameId === 'null') {
-      setError("无效的游戏ID，无法更新");
+    // 表单验证
+    if (!formData.title || !formData.description || !formData.gameUrl) {
+      setError("请填写完整的游戏信息");
       return;
     }
     
@@ -321,44 +301,42 @@ export default function EditGamePage() {
     setSubmitting(true);
     
     try {
-      console.log("提交的游戏数据:", formData);
-      
-      // 检查分类ID格式是否为24位十六进制字符串
-      const categoryIdRegex = /^[0-9a-fA-F]{24}$/;
-      if (!categoryIdRegex.test(formData.categoryId)) {
-        setError("分类ID格式不正确，请重新选择分类");
-        setSubmitting(false);
-        return;
-      }
-      
-      // 调用API更新游戏
       const response = await fetch(`/api/games/${gameId}`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          title: gameDetails.title,
+          titleEn: gameDetails.titleEn,
+          description: gameDetails.description,
+          descriptionEn: gameDetails.descriptionEn,
+          longDescription: gameDetails.longDescription,
+          longDescriptionEn: gameDetails.longDescriptionEn,
+          imageUrl: gameDetails.imageUrl,
+          screenshots: gameDetails.screenshots,
+          gameUrl: gameDetails.gameUrl,
+          categoryId: gameDetails.categoryId,
+          developer: gameDetails.developer,
+          releaseDate: gameDetails.releaseDate,
+          tags: gameDetails.tags
+        })
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "更新游戏失败");
+      if (response.ok) {
+        setSuccess("游戏更新成功！");
+        
+        // 延迟返回游戏列表页
+        setTimeout(() => {
+          router.push("/admin/games");
+        }, 1500);
+      } else {
+        throw new Error("更新游戏失败");
       }
-      
-      const result = await response.json();
-      console.log("更新结果:", result);
-      
-      // 更新成功
-      setSuccess("游戏更新成功！");
-      setSubmitting(false);
-      
-      // 延迟返回游戏列表页
-      setTimeout(() => {
-        router.push("/admin/games");
-      }, 1500);
-    } catch (error: any) {
+    } catch (error) {
       console.error("更新游戏错误:", error);
-      setError(error.message || "更新游戏失败，请重试");
+      setError(error instanceof Error ? error.message : "更新游戏失败，请重试");
+    } finally {
       setSubmitting(false);
     }
   };

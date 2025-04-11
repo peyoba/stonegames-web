@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 /**
  * 添加分类页面
@@ -141,8 +141,6 @@ export default function AddCategoryPage() {
               window.localStorage.removeItem("admin_name");
               window.location.href = "/admin/login";
             }}
-            variant="destructive"
-            size="sm"
           >
             退出登录
           </Button>
@@ -158,7 +156,7 @@ export default function AddCategoryPage() {
       }}>
         <h1 style={{ margin: 0 }}>添加分类</h1>
         <Link href="/admin/categories">
-          <Button variant="outline">
+          <Button>
             <ArrowLeft className="mr-2 h-4 w-4" />
             返回分类列表
           </Button>

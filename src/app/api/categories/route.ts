@@ -1,54 +1,28 @@
 import { NextResponse } from 'next/server'
-import { connectToDatabase, COLLECTIONS } from '@/lib/mongodb'
-import Category from '@/models/category'
-import mongoose from 'mongoose'
+import { connectToDatabase } from '@/lib/mongodb'
+import type { Category } from '@/types'
 
-// 确保MongoDB连接
-let isConnected = false
-const connectDB = async () => {
-  if (isConnected) return
+// 获取分类列表
+export async function GET(): Promise<NextResponse> {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/stonegames')
-    isConnected = true
-    console.log('MongoDB连接成功')
-  } catch (error) {
-    console.error('MongoDB连接失败:', error)
-  }
-}
-
-// 分类接口
-interface Category {
-  id: string;
-  name: string;
-  nameEn: string;
-  icon?: string;
-  count: number;
-}
-
-/**
- * 获取所有分类
- * @param request 请求对象
- * @returns 分类列表
- */
-export async function GET(request: Request) {
-  try {
-    // 确保MongoDB已连接
-    await connectDB()
+    const { db } = await connectToDatabase()
+    const categories = await db.collection('categories').find({}).toArray()
     
-    // 从数据库获取分类列表
-    const categories = await Category.find().lean()
-    
-    // 将MongoDB的_id转换为id字段
-    const formattedCategories = categories.map(category => ({
-      ...category,
-      id: category._id.toString()
-    }))
+    // 格式化MongoDB的_id字段为id，并删除_id字段
+    const formattedCategories = categories.map((category: any) => ({
+      id: category._id.toString(),
+      name: category.name,
+      nameEn: category.nameEn,
+      games: category.games || [],
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt
+    })) satisfies Category[]
     
     return NextResponse.json(formattedCategories)
   } catch (error) {
-    console.error("获取分类列表失败:", error)
+    console.error('获取分类列表失败:', error)
     return NextResponse.json(
-      { error: "获取分类列表失败" },
+      { error: '获取分类列表失败' },
       { status: 500 }
     )
   }
@@ -61,8 +35,7 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    // 确保MongoDB已连接
-    await connectDB()
+    const { db } = await connectToDatabase()
     
     // 解析请求数据
     const data = await request.json()
@@ -77,7 +50,7 @@ export async function POST(request: Request) {
     }
     
     // 检查分类名称是否已存在
-    const existingCategory = await Category.findOne({
+    const existingCategory = await db.collection('categories').findOne({
       $or: [{ name }, { nameEn }]
     })
     
@@ -89,17 +62,23 @@ export async function POST(request: Request) {
     }
     
     // 创建新分类
-    const newCategory = new Category({
+    const newCategory = {
       name,
       nameEn,
       icon,
-      count: 0
-    })
+      games: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
     
     // 保存到数据库
-    await newCategory.save()
+    const result = await db.collection('categories').insertOne(newCategory)
+    const insertedCategory = {
+      ...newCategory,
+      id: result.insertedId.toString(),
+    }
     
-    return NextResponse.json(newCategory)
+    return NextResponse.json(insertedCategory)
   } catch (error) {
     console.error("创建分类失败:", error)
     return NextResponse.json(

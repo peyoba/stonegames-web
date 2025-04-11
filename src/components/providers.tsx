@@ -1,9 +1,20 @@
 "use client"
 
+import { ThemeProvider } from "next-themes"
+
 /**
  * 客户端提供者组件
- * 空的提供者组件，移除了SessionProvider以避免冲突
+ * 包含主题提供者
  */
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="light"
+      enableSystem
+      disableTransitionOnChange
+    >
+      {children}
+    </ThemeProvider>
+  )
 } 

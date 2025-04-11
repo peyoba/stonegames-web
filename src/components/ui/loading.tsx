@@ -5,19 +5,16 @@ import { useAppStore } from "@/store"
  * 用于显示加载状态
  */
 export function Loading() {
-  // 获取加载状态
-  const isLoading = useAppStore((state) => state.isLoading)
-
-  // 如果没有加载，不显示组件
-  if (!isLoading) return null
-
+  // 从 store 中获取 loading 状态
+  const { loading } = useAppStore()
+  
+  // 如果不处于加载状态，不显示加载动画
+  if (!loading) return null
+  
+  // 显示加载动画
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-      <div className="flex flex-col items-center gap-2">
-        {/* 加载动画 */}
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
     </div>
   )
 } 

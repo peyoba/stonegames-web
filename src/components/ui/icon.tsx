@@ -1,32 +1,47 @@
-import { forwardRef } from "react"
+import * as icons from "lucide-react"
 import { cn } from "@/lib/utils"
-import * as Icons from "lucide-react"
+import { HelpCircle } from "lucide-react" // 导入默认图标
 
 // 图标组件属性
-export interface IconProps extends React.HTMLAttributes<HTMLSpanElement> {
-  name: keyof typeof Icons
-  size?: number
+interface IconProps extends React.HTMLAttributes<HTMLSpanElement> {
+  name: string
+  size?: number | string
+  color?: string
 }
 
 /**
- * 图标组件
- * 用于显示各种图标
+ * 动态图标组件
+ * 根据名称渲染 Lucide 图标
  */
-const Icon = forwardRef<HTMLSpanElement, IconProps>(
-  ({ className, name, size = 24, ...props }, ref) => {
-    const IconComponent = Icons[name]
+export const Icon = ({
+  name,
+  size = 16,
+  color,
+  className,
+  ...props
+}: IconProps) => {
+  // @ts-ignore - 动态导入 Lucide 图标
+  const IconComponent = icons[name]
 
+  // 检查 IconComponent 是否是有效的 React 组件类型
+  if (typeof IconComponent !== "function" && typeof IconComponent !== "object") {
+    console.warn(`Icon component not found for name: ${name}, rendering default icon.`)
+    // 如果找不到或类型无效，渲染默认图标
     return (
-      <span
-        ref={ref}
-        className={cn("inline-flex items-center justify-center", className)}
-        {...props}
-      >
-        <IconComponent size={size} />
+      <span className={cn("inline-block", className)} style={{ color }} {...props}>
+        <HelpCircle size={size} />
       </span>
     )
   }
-)
-Icon.displayName = "Icon"
 
-export { Icon } 
+  // 渲染找到的图标组件
+  return (
+    <span
+      className={cn("inline-block", className)}
+      style={{ color }}
+      {...props}
+    >
+      <IconComponent size={size} />
+    </span>
+  )
+} 

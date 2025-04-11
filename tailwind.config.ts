@@ -1,11 +1,11 @@
 import type { Config } from "tailwindcss"
 
-const config = {
-  darkMode: ["class"],
+const config: Config = {
+  darkMode: "class",
   content: [
-    './pages/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-    './app/**/*.{ts,tsx}',
+    './src/pages/**/*.{ts,tsx}',
+    './src/components/**/*.{ts,tsx}',
+    './src/app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
   ],
   prefix: "",
@@ -60,6 +60,14 @@ const config = {
   				'5': 'hsl(var(--chart-5))'
   			}
   		},
+  		borderColor: {
+  			DEFAULT: 'hsl(var(--border))',
+  			primary: 'hsl(var(--primary))',
+  			secondary: 'hsl(var(--secondary))',
+  			destructive: 'hsl(var(--destructive))',
+  			muted: 'hsl(var(--muted))',
+  			accent: 'hsl(var(--accent))',
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
@@ -90,6 +98,6 @@ const config = {
   	}
   },
   plugins: [require("tailwindcss-animate")],
-} satisfies Config
+}
 
 export default config 

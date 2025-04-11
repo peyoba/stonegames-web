@@ -1,98 +1,115 @@
-# 石头游戏网站 - Stone Games
+# Stone Games 游戏导航网站
 
-一个简洁的HTML5游戏集合网站，提供各种经典小游戏和益智游戏。
+![Stone Games Logo](public/images/logo.png)
+
+Stone Games是一个简单的游戏导航网站，通过iframe方式嵌入各种网页游戏，为用户提供便捷的游戏发现和体验平台。网站默认提供英文界面，同时支持中文语言切换，便于全球用户访问。
 
 ## 功能特点
 
-- 游戏分类浏览
-- 游戏详情展示
-- 响应式设计
-- 管理后台
-- MongoDB数据存储
+- 🎮 丰富的游戏分类和列表
+- 🔍 游戏搜索和过滤功能
+- 🌐 多语言支持 (英文/中文)
+- 📱 响应式设计，适配各种设备
+- 👍 游戏点赞和分享功能
+- 🖼️ 游戏截图和详情展示
+- 🔄 实时更新的游戏统计
 
 ## 技术栈
 
-- Next.js 14.1.0
-- React 18
-- TypeScript
-- Tailwind CSS
-- MongoDB
+- **前端**: Next.js 14, Tailwind CSS, Shadcn/UI, Framer Motion
+- **后端**: Next.js API Routes, MongoDB
+- **部署**: Cloudflare Pages, Cloudflare DNS
 
-## 开始使用
+## 快速开始
 
 ### 环境要求
 
-- Node.js 18.0.0 或更高版本
-- pnpm 8.0.0 或更高版本
+- Node.js 18+
 - MongoDB
 
-### 安装步骤
+### 安装
 
 1. 克隆仓库
-
 ```bash
-git clone https://github.com/yourusername/stonegames-web.git
+git clone https://github.com/peyoba/stonegames-web.git
 cd stonegames-web
 ```
 
 2. 安装依赖
-
 ```bash
-pnpm install
+npm install
 ```
 
 3. 配置环境变量
-
-创建 `.env.local` 文件，并添加以下内容：
-
-```
-# MongoDB 连接信息
-MONGODB_URI=你的MongoDB连接字符串
-MONGODB_DB=stonegames
-
-# 应用信息
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+```bash
+cp .env.example .env.local
+# 编辑 .env.local 文件，填写必要的环境变量
 ```
 
-4. 初始化数据库
+4. 运行开发服务器
+```bash
+npm run dev
+```
+
+5. 打开浏览器访问 [http://localhost:3000](http://localhost:3000)
+
+### 构建生产版本
 
 ```bash
-pnpm seed
+npm run build
+npm run start
 ```
-
-5. 启动开发服务器
-
-```bash
-pnpm dev
-```
-
-6. 访问网站
-
-打开浏览器，访问 [http://localhost:3000](http://localhost:3000)
-
-## MongoDB 数据库设置
-
-1. 创建 MongoDB Atlas 账户或使用本地 MongoDB 服务器
-2. 创建名为 `stonegames` 的数据库
-3. 在连接字符串中使用该数据库名称
-4. 运行 `pnpm seed` 脚本初始化数据
 
 ## 部署
 
-项目可以部署到 Vercel、Netlify 或其他支持 Next.js 的平台。
+详细的部署说明请参考 [部署指南](docs/deployment.md)。
 
-```bash
-pnpm build
-pnpm start
+## 项目结构
+
+```
+stonegames-web/
+├── public/             # 静态资源
+├── src/                # 源代码
+│   ├── app/            # 页面和API路由
+│   ├── components/     # 组件
+│   ├── lib/            # 工具函数和库
+│   ├── models/         # 数据模型
+│   └── store/          # 状态管理
+├── prisma/             # Prisma配置和迁移
+├── docs/               # 文档
+└── scripts/            # 脚本工具
 ```
 
-## 管理后台
+## 开发指南
 
-访问 `/admin/login` 路径登录管理后台，默认账号密码：
+### 添加新游戏
 
-- 用户名：admin@stonegames.com
-- 密码：admin123
+请访问管理员界面 `/admin/games` 添加新游戏。需要提供以下信息：
+
+- 游戏标题（中英文）
+- 游戏描述（中英文）
+- 游戏URL（iframe嵌入地址）
+- 游戏分类
+- 游戏图片
+
+### 添加新分类
+
+请访问管理员界面 `/admin/categories` 添加新分类。需要提供以下信息：
+
+- 分类名称（中英文）
+- 分类图标（可选）
+
+## 贡献指南
+
+欢迎贡献代码、报告问题或提出新功能建议！请先fork本仓库，创建功能分支，提交更改后发起Pull Request。
 
 ## 许可证
 
-MIT 
+本项目采用 [MIT License](LICENSE) 许可。
+
+## 联系方式
+
+如有问题或建议，请通过以下方式联系我们：
+
+- 网站: [aistone.org](https://aistone.org)
+- 邮箱: contact@aistone.org

@@ -7,7 +7,7 @@ import AdminHeader from "../../../AdminHeader";
 import { Check, ChevronLeft, Loader2 } from "lucide-react";
 
 // 分类接口
-interface Category {
+type Category = {
   id: string;
   name: string;
   nameEn: string;
@@ -37,7 +37,7 @@ export default function EditCategoryPage() {
   const [adminName, setAdminName] = useState("管理员");
   
   // 表单数据
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Omit<Category, 'id' | 'count'>>({
     name: "",
     nameEn: "",
     icon: "🎮",

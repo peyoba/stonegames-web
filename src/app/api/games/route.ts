@@ -1,19 +1,20 @@
 import { NextResponse } from 'next/server'
-import { connectToDatabase, COLLECTIONS } from '@/lib/mongodb'
-import Game from '@/models/game'
-import mongoose from 'mongoose'
+import { connectToDatabase } from '@/lib/mongodb'
+import { ObjectId } from 'mongodb'
 
-// 确保MongoDB连接 - 这可能在开发环境中需要
-let isConnected = false
-const connectDB = async () => {
-  if (isConnected) return
-  try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/stonegames')
-    isConnected = true
-    console.log('MongoDB连接成功')
-  } catch (error) {
-    console.error('MongoDB连接失败:', error)
-  }
+// 定义游戏对象的类型
+interface Game {
+  _id: ObjectId;
+  title: string;
+  titleEn: string;
+  description: string;
+  descriptionEn: string;
+  imageUrl: string;
+  gameUrl: string;
+  categoryId: ObjectId;
+  isPublished: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
@@ -23,60 +24,58 @@ const connectDB = async () => {
  */
 export async function GET(request: Request) {
   try {
-    // 确保MongoDB已连接
-    await connectDB()
+    const { db } = await connectToDatabase()
+    const { searchParams } = new URL(request.url)
+    const categoryId = searchParams.get('categoryId')
+    const search = searchParams.get('search')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
 
-    // 获取查询参数
-    const url = new URL(request.url)
-    const categoryId = url.searchParams.get("categoryId")
-    const search = url.searchParams.get("search")
-    const sortBy = url.searchParams.get("sortBy") || "views" // 默认按浏览量排序
-    
     // 构建查询条件
     const query: any = {}
     if (categoryId) {
-      query.categoryId = categoryId
+      query.categoryId = new ObjectId(categoryId)
     }
-    
-    if (search && search.trim() !== "") {
-      const searchRegex = new RegExp(search, 'i')
+    if (search) {
       query.$or = [
-        { title: { $regex: searchRegex } },
-        { description: { $regex: searchRegex } }
+        { title: { $regex: search, $options: 'i' } },
+        { titleEn: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { descriptionEn: { $regex: search, $options: 'i' } }
       ]
     }
-    
-    // 构建排序条件
-    const sort: any = {}
-    if (sortBy === "views") {
-      sort.views = -1
-    } else if (sortBy === "likes") {
-      sort.likes = -1
-    } else if (sortBy === "title") {
-      sort.title = 1
-    }
-    
-    // 查询数据库
-    const games = await Game.find(query)
-      .sort(sort)
-      .select('_id title titleEn description descriptionEn imageUrl gameUrl categoryId views likes')
-      .lean()
-    
-    // 格式化游戏数据，确保id字段存在
-    const formattedGames = games.map(game => {
-      // 将_id格式化为id字段
-      const { _id, ...rest } = game;
+
+    // 获取总数
+    const total = await db.collection('games').countDocuments(query)
+
+    // 获取游戏列表
+    const games = await db.collection('games')
+      .find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .toArray() as Game[]
+
+    // 格式化返回数据
+    const formattedGames = games.map((game: Game) => {
+      const { _id, ...rest } = game
       return {
-        id: _id.toString(), // 确保id是字符串
+        id: _id.toString(),
         ...rest
-      };
-    });
-    
-    return NextResponse.json(formattedGames)
+      }
+    })
+
+    return NextResponse.json({
+      data: formattedGames,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    })
   } catch (error) {
-    console.error("获取游戏列表失败:", error)
+    console.error('获取游戏列表失败:', error)
     return NextResponse.json(
-      { error: "获取游戏列表失败" },
+      { error: '获取游戏列表失败' },
       { status: 500 }
     )
   }
@@ -89,95 +88,53 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    // 确保MongoDB已连接
-    await connectDB()
-    
-    // 解析请求数据
-    const data = await request.json()
-    const { 
-      title, 
+    const { db } = await connectToDatabase()
+    const body = await request.json()
+    const {
+      title,
       titleEn,
       description,
       descriptionEn,
-      longDescription,
-      longDescriptionEn,
-      imageUrl, 
-      gameUrl, 
+      imageUrl,
+      gameUrl,
       categoryId,
-      screenshots = [],
-      releaseDate = new Date().toISOString().split('T')[0],
-      developer = "未知开发者",
-      tags = []
-    } = data
-    
+      isPublished
+    } = body
+
     // 验证必填字段
     if (!title || !titleEn || !description || !descriptionEn || !imageUrl || !gameUrl || !categoryId) {
       return NextResponse.json(
-        { error: "缺少必填字段" },
+        { error: '请填写所有必填字段' },
         { status: 400 }
       )
     }
-    
-    try {
-      // 尝试将categoryId转换为ObjectId
-      const objectId = new mongoose.Types.ObjectId(categoryId);
-      
-      // 创建新游戏
-      const newGame = new Game({
-        title,
-        titleEn,
-        description,
-        descriptionEn,
-        longDescription,
-        longDescriptionEn,
-        imageUrl,
-        screenshots: screenshots.length > 0 ? screenshots : [imageUrl],
-        gameUrl,
-        categoryId: objectId,
-        releaseDate,
-        developer,
-        tags,
-        likes: 0,
-        views: 0
-      })
-      
-      // 保存到数据库
-      await newGame.save()
-      
-      // 更新分类游戏计数
-      const { db } = await connectToDatabase()
-      await db.collection(COLLECTIONS.CATEGORIES).updateOne(
-        { _id: objectId },
-        { $inc: { count: 1 } }
-      )
-      
-      // 查询分类信息
-      const category = await db.collection(COLLECTIONS.CATEGORIES).findOne({ _id: objectId })
-      
-      if (category) {
-        return NextResponse.json({
-          ...newGame.toObject(),
-          category: {
-            id: category._id,
-            name: category.name,
-            nameEn: category.nameEn,
-            icon: category.icon
-          }
-        })
-      }
-      
-      return NextResponse.json(newGame)
-    } catch (idError) {
-      console.error("无效的分类ID:", idError)
-      return NextResponse.json(
-        { error: "无效的分类ID" },
-        { status: 400 }
-      )
+
+    // 创建新游戏
+    const newGame: Omit<Game, '_id'> = {
+      title,
+      titleEn,
+      description,
+      descriptionEn,
+      imageUrl,
+      gameUrl,
+      categoryId: new ObjectId(categoryId),
+      isPublished: isPublished || false,
+      createdAt: new Date(),
+      updatedAt: new Date()
     }
+
+    // 保存到数据库
+    const result = await db.collection('games').insertOne(newGame)
+    const insertedGame = {
+      ...newGame,
+      id: result.insertedId.toString()
+    }
+
+    return NextResponse.json(insertedGame)
   } catch (error) {
-    console.error("创建游戏失败:", error)
+    console.error('创建游戏失败:', error)
     return NextResponse.json(
-      { error: "创建游戏失败" },
+      { error: '创建游戏失败' },
       { status: 500 }
     )
   }

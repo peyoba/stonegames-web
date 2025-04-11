@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { checkAdminAuth } from "@/lib/auth"
 
 /**
  * 获取管理后台统计数据
+ * @returns 统计数据
  */
-export async function GET(request: Request) {
+export async function GET() {
+  // 在实际项目中，应该使用checkAdminAuth来验证，但由于是本地存储方案，这里简化验证
   try {
-    // 验证管理员权限 - 现在改为简单方案
-    // 在实际项目中，应该使用checkAdminAuth来验证，但由于是本地存储方案，这里简化验证
-    // 假设任何请求都是有效的
-    
     // 获取统计数据
     const [gamesCount, publishedGamesCount, categoriesCount] = await Promise.all([
       // 总游戏数

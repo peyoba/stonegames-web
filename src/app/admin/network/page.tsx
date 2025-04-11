@@ -133,8 +133,6 @@ export default function NetworkSettingsPage() {
         throw new Error(errorData.error || "保存网络设置失败");
       }
       
-      const result = await response.json();
-      
       setSuccess("网络设置已更新！");
       setSubmitting(false);
     } catch (error) {

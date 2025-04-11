@@ -1,13 +1,31 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Heading } from "@/components/ui/heading";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Footer } from "@/components/layout/footer";
 import { PlaceholderImage } from "@/components/ui/placeholder-image";
 import { useAppStore } from "@/store";
-import { ArrowLeft, ArrowUpRight, Share, ThumbsUp } from "lucide-react";
+import { 
+  ArrowLeft, 
+  ArrowUpRight, 
+  Share, 
+  ThumbsUp, 
+  Expand, 
+  Minimize,
+  Calendar,
+  User,
+  Tag,
+  Eye,
+  Maximize
+} from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
+import { Navbar } from "@/components/layout/navbar";
 
 // 游戏详情接口
 interface GameDetails {
@@ -22,10 +40,11 @@ interface GameDetails {
   screenshots: string[];
   gameUrl: string;
   categoryId: string;
-  category: {
+  category?: {
     id: string;
     name: string;
     nameEn: string;
+    icon?: string;
   };
   releaseDate?: string;
   developer?: string;
@@ -152,16 +171,19 @@ const mockGameDetails: Record<string, GameDetails> = {
 export default function GameDetailsPage() {
   // 获取游戏ID
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
 
   // 状态管理
   const locale = useAppStore((state) => state.locale);
+  const t = useTranslation();
   const [game, setGame] = useState<GameDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [activeScreenshot, setActiveScreenshot] = useState(0);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const [liked, setLiked] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // 获取游戏详情
   useEffect(() => {
@@ -183,35 +205,37 @@ export default function GameDetailsPage() {
         if (response.ok) {
           const data = await response.json();
           console.log('成功获取游戏详情:', data);
+          
+          // 如果没有分类信息，尝试获取分类详情
+          if (data.categoryId && !data.category) {
+            try {
+              const categoryResponse = await fetch(`/api/categories/${data.categoryId}`);
+              if (categoryResponse.ok) {
+                const categoryData = await categoryResponse.json();
+                data.category = categoryData;
+              }
+            } catch (err) {
+              console.error('获取分类详情失败:', err);
+            }
+          }
+          
           setGame(data);
+          
+          // 增加游戏浏览次数
+          try {
+            fetch(`/api/games/${id}/view`, { method: 'POST' });
+          } catch (err) {
+            console.error('增加浏览次数失败:', err);
+          }
         } else {
           // API错误处理
           const errorText = await response.text();
           console.error('API返回错误:', response.status, errorText);
-          
-          // 使用模拟数据作为后备
-          console.log('尝试使用模拟游戏详情数据');
-          const mockGame = mockGameDetails[id];
-          if (mockGame) {
-            console.log('找到模拟游戏数据:', mockGame);
-            setGame(mockGame);
-          } else {
-            console.error('未找到游戏数据，ID:', id);
-            setError(true);
-          }
+          setError(true);
         }
       } catch (error) {
         console.error('获取游戏详情失败:', error);
-        // 使用模拟数据作为后备
-        console.log('错误后尝试使用模拟游戏详情数据');
-        const mockGame = mockGameDetails[id];
-        if (mockGame) {
-          console.log('找到模拟游戏数据:', mockGame);
-          setGame(mockGame);
-        } else {
-          console.error('未找到游戏数据，ID:', id);
-          setError(true);
-        }
+        setError(true);
       } finally {
         setLoading(false);
       }
@@ -233,6 +257,44 @@ export default function GameDetailsPage() {
       [key]: true,
     }));
   };
+  
+  // 处理点赞
+  const handleLike = async () => {
+    if (!game) return;
+    
+    setLiked(!liked);
+    
+    try {
+      await fetch(`/api/games/${id}/like`, {
+        method: 'POST',
+      });
+    } catch (err) {
+      console.error('点赞失败:', err);
+    }
+  };
+  
+  // 处理分享
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: locale === 'zh' ? game?.title : game?.titleEn,
+        text: locale === 'zh' ? game?.description : game?.descriptionEn,
+        url: window.location.href,
+      });
+    } else {
+      // 复制链接到剪贴板
+      navigator.clipboard.writeText(window.location.href);
+      alert(locale === 'zh' ? '链接已复制到剪贴板' : 'Link copied to clipboard');
+    }
+  };
+
+  // 切换全屏模式
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  // 判断当前语言是否为中文
+  const isZhLocale = locale.includes('zh');
 
   // 显示加载状态
   if (loading) {
@@ -254,271 +316,308 @@ export default function GameDetailsPage() {
   if (error || !game) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/20 to-secondary/20">
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center space-y-4">
-            <PlaceholderImage className="w-24 h-24 mx-auto text-red-500" />
-            <h2 className="text-xl font-semibold text-red-500">
+        <div className="container mx-auto px-4 py-16">
+          <div className="text-center max-w-md mx-auto">
+            <h1 className="text-3xl font-bold text-primary mb-4">
               {locale === "zh" ? "游戏不存在" : "Game Not Found"}
-            </h2>
-            <p className="text-gray-600 max-w-md mx-auto">
+            </h1>
+            <p className="text-gray-600 mb-8">
               {locale === "zh"
-                ? "抱歉，我们找不到您请求的游戏。它可能已被移除或链接错误。"
-                : "Sorry, we couldn't find the game you requested. It may have been removed or the link is incorrect."}
+                ? "抱歉，您查找的游戏不存在或已被删除。"
+                : "Sorry, the game you are looking for does not exist or has been removed."}
             </p>
-            <Link href="/">
-              <Button variant="default" className="mt-4">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                {locale === "zh" ? "返回首页" : "Back to Home"}
-              </Button>
-            </Link>
+            <Button onClick={() => router.push('/')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              {locale === "zh" ? "返回首页" : "Back to Home"}
+            </Button>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/20 to-secondary/20">
-      {/* 返回按钮 */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href="/">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              {locale === "zh" ? "返回首页" : "Back to Home"}
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          {/* 游戏标题和信息 */}
-          <div className="p-6 border-b">
-            <div className="flex flex-col md:flex-row md:items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  {locale === "zh" ? game.title : game.titleEn}
-                </h1>
-                <div className="mt-2 flex items-center">
-                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                    {locale === "zh" ? game.category.name : game.category.nameEn}
-                  </span>
-                  {game.developer && (
-                    <span className="ml-2 text-sm text-gray-500">
-                      {locale === "zh" ? "开发者: " : "Developer: "}
-                      {game.developer}
-                    </span>
-                  )}
-                  {game.releaseDate && (
-                    <span className="ml-2 text-sm text-gray-500">
-                      {locale === "zh" ? "发布: " : "Released: "}
-                      {new Date(game.releaseDate).getFullYear()}
-                    </span>
-                  )}
+    <div className="min-h-screen flex flex-col">
+      {/* 导航栏（非全屏模式时显示） */}
+      {!isFullscreen && <Navbar />}
+      
+      {/* 主要内容 */}
+      <main className={`flex-grow ${isFullscreen ? 'p-0' : 'p-4 md:p-8'}`}>
+        <div className={`max-w-7xl mx-auto ${isFullscreen ? 'w-full h-screen' : ''}`}>
+          {/* 游戏区域 - 全屏模式 */}
+          {isFullscreen && (
+            <div className="fixed inset-0 z-50 bg-background">
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between p-4 border-b">
+                  <h2 className="text-xl font-semibold">
+                    {locale === "zh" ? game.title : game.titleEn}
+                  </h2>
+                  <Button variant="outline" onClick={toggleFullscreen}>
+                    <Minimize className="mr-2 h-4 w-4" />
+                    {locale === "zh" ? "退出全屏" : "Exit Fullscreen"}
+                  </Button>
+                </div>
+                <div className="flex-1">
+                  <iframe
+                    src={game.gameUrl}
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
                 </div>
               </div>
-
-              <div className="mt-4 md:mt-0 flex items-center space-x-2">
-                <a href={game.gameUrl} target="_blank" rel="noopener noreferrer">
-                  <Button className="w-full md:w-auto">
-                    {locale === "zh" ? "开始游戏" : "Play Game"}
-                    <ArrowUpRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </a>
-                <Button
-                  variant={liked ? "default" : "outline"}
-                  size="icon"
-                  onClick={() => setLiked(!liked)}
-                  title={locale === "zh" ? "喜欢" : "Like"}
-                >
-                  <ThumbsUp className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                    alert(
-                      locale === "zh"
-                        ? "链接已复制到剪贴板"
-                        : "Link copied to clipboard"
-                    );
-                  }}
-                  title={locale === "zh" ? "分享" : "Share"}
-                >
-                  <Share className="h-4 w-4" />
-                </Button>
-              </div>
             </div>
-          </div>
-
-          {/* 游戏预览 */}
-          <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* 主要预览 */}
-            <div className="md:col-span-2">
-              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                {game.screenshots && game.screenshots.length > 0 && !imageErrors[`screenshot-${activeScreenshot}`] ? (
-                  <img
-                    src={game.screenshots[activeScreenshot]}
-                    alt={locale === "zh" ? game.title : game.titleEn}
-                    className="w-full h-full object-cover"
-                    onError={() => handleImageError(`screenshot-${activeScreenshot}`)}
-                  />
-                ) : !imageErrors.mainImage ? (
-                  <img
-                    src={game.imageUrl}
-                    alt={locale === "zh" ? game.title : game.titleEn}
-                    className="w-full h-full object-cover"
-                    onError={() => handleImageError('mainImage')}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <PlaceholderImage className="w-16 h-16 text-gray-400" />
+          )}
+          
+          {/* 主要内容 */}
+          <div className="container mx-auto px-4 pb-16">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* 左侧：游戏信息 */}
+              <div className="lg:col-span-2 space-y-6">
+                <div className="bg-card rounded-lg shadow-sm overflow-hidden">
+                  <div className="relative aspect-video">
+                    {!imageErrors['main'] ? (
+                      <img
+                        src={game.imageUrl}
+                        alt={locale === "zh" ? game.title : game.titleEn}
+                        className="w-full h-full object-cover"
+                        onError={() => handleImageError('main')}
+                      />
+                    ) : (
+                      <PlaceholderImage className="w-full h-full" />
+                    )}
                   </div>
-                )}
-              </div>
-
-              {/* 缩略图 */}
-              {game.screenshots && game.screenshots.length > 0 && (
-                <div className="mt-4 flex space-x-2 overflow-x-auto pb-2">
-                  {game.screenshots.map((screenshot, index) => (
-                    <button
-                      key={index}
-                      className={`flex-none w-24 h-16 rounded-md overflow-hidden ${
-                        activeScreenshot === index
-                          ? "ring-2 ring-primary"
-                          : "opacity-70 hover:opacity-100"
-                      }`}
-                      onClick={() => setActiveScreenshot(index)}
-                    >
-                      {!imageErrors[`thumbnail-${index}`] ? (
-                        <img
-                          src={screenshot}
-                          alt={`Screenshot ${index + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={() => handleImageError(`thumbnail-${index}`)}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                          <span className="text-xs text-gray-400">
-                            {index + 1}
+                  
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h1 className="text-3xl font-bold">
+                        {locale === "zh" ? game.title : game.titleEn}
+                      </h1>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={handleLike}>
+                          <ThumbsUp className={`h-4 w-4 mr-1 ${liked ? 'fill-current text-primary' : ''}`} />
+                          {game.likes || 0}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={handleShare}>
+                          <Share className="h-4 w-4 mr-1" />
+                          {locale === "zh" ? "分享" : "Share"}
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <p className="text-muted-foreground mb-6">
+                      {locale === "zh" ? game.description : game.descriptionEn}
+                    </p>
+                    
+                    {/* 游戏元数据 */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      {game.category && (
+                        <div className="flex items-center text-sm">
+                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary mr-3">
+                            {game.category.icon || '🎮'}
+                          </span>
+                          <span>
+                            {locale === "zh" ? game.category.name : game.category.nameEn}
                           </span>
                         </div>
                       )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* 游戏详情 */}
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                  {locale === "zh" ? "游戏介绍" : "Description"}
-                </h2>
-                <p className="text-gray-700">
-                  {locale === "zh"
-                    ? game.longDescription || game.description
-                    : game.longDescriptionEn || game.descriptionEn}
-                </p>
-              </div>
-
-              {game.tags && game.tags.length > 0 && (
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                    {locale === "zh" ? "标签" : "Tags"}
-                  </h2>
-                  <div className="flex flex-wrap gap-2">
-                    {game.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                  {locale === "zh" ? "统计信息" : "Stats"}
-                </h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-500">
-                      {locale === "zh" ? "游戏次数" : "Plays"}
-                    </p>
-                    <p className="text-xl font-bold text-gray-900">
-                      {game.views?.toLocaleString() || "0"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-500">
-                      {locale === "zh" ? "喜欢" : "Likes"}
-                    </p>
-                    <p className="text-xl font-bold text-gray-900">
-                      {liked
-                        ? (game.likes ? game.likes + 1 : 1).toLocaleString()
-                        : (game.likes || 0).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 相关游戏推荐 */}
-          <div className="p-6 border-t">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              {locale === "zh" ? "相关游戏" : "Related Games"}
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {Object.values(mockGameDetails)
-                .filter((g) => g.id !== game.id && g.categoryId === game.categoryId)
-                .slice(0, 5)
-                .map((relatedGame) => (
-                  <Link
-                    key={relatedGame.id}
-                    href={`/games/${relatedGame.id}`}
-                    className="block group"
-                  >
-                    <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden mb-2">
-                      {!imageErrors[`related-${relatedGame.id}`] ? (
-                        <img
-                          src={relatedGame.imageUrl}
-                          alt={
-                            locale === "zh"
-                              ? relatedGame.title
-                              : relatedGame.titleEn
-                          }
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          onError={() =>
-                            handleImageError(`related-${relatedGame.id}`)
-                          }
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <PlaceholderImage className="w-8 h-8 text-gray-400" />
+                      
+                      {game.releaseDate && (
+                        <div className="flex items-center text-sm">
+                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary mr-3">
+                            <Calendar className="h-4 w-4" />
+                          </span>
+                          <span>{game.releaseDate}</span>
+                        </div>
+                      )}
+                      
+                      {game.developer && (
+                        <div className="flex items-center text-sm">
+                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary mr-3">
+                            <User className="h-4 w-4" />
+                          </span>
+                          <span>{game.developer}</span>
+                        </div>
+                      )}
+                      
+                      {game.views !== undefined && (
+                        <div className="flex items-center text-sm">
+                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary mr-3">
+                            <Eye className="h-4 w-4" />
+                          </span>
+                          <span>{game.views} {locale === "zh" ? "次浏览" : "views"}</span>
                         </div>
                       )}
                     </div>
-                    <h3 className="text-sm font-medium text-gray-900 truncate group-hover:text-primary transition-colors">
-                      {locale === "zh"
-                        ? relatedGame.title
-                        : relatedGame.titleEn}
+                    
+                    {/* 标签 */}
+                    {game.tags && game.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-6">
+                        {game.tags.map((tag, index) => (
+                          <span 
+                            key={index} 
+                            className="inline-flex items-center rounded-full bg-secondary/50 px-2.5 py-0.5 text-xs font-medium"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-center">
+                      <Button 
+                        size="lg" 
+                        onClick={toggleFullscreen}
+                        className="w-full md:w-auto"
+                      >
+                        <Expand className="mr-2 h-4 w-4" />
+                        {locale === "zh" ? "开始游戏" : "Play Game"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* 游戏详情和截图 */}
+                <Tabs defaultValue="details" className="bg-card rounded-lg shadow-sm overflow-hidden">
+                  <TabsList className="w-full border-b rounded-none p-0">
+                    <TabsTrigger 
+                      value="details" 
+                      className="flex-1 rounded-none py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary"
+                    >
+                      {locale === "zh" ? "游戏详情" : "Game Details"}
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="screenshots" 
+                      className="flex-1 rounded-none py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary"
+                    >
+                      {locale === "zh" ? "游戏截图" : "Screenshots"}
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="details" className="p-6">
+                    <div className="prose max-w-none">
+                      {locale === "zh" && game.longDescription && (
+                        <div dangerouslySetInnerHTML={{ __html: game.longDescription.replace(/\n/g, '<br/>') }} />
+                      )}
+                      {locale === "en" && game.longDescriptionEn && (
+                        <div dangerouslySetInnerHTML={{ __html: game.longDescriptionEn.replace(/\n/g, '<br/>') }} />
+                      )}
+                      {!(locale === "zh" ? game.longDescription : game.longDescriptionEn) && (
+                        <p className="text-muted-foreground">
+                          {locale === "zh" ? "暂无详细描述。" : "No detailed description available."}
+                        </p>
+                      )}
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="screenshots" className="p-6">
+                    {game.screenshots && game.screenshots.length > 0 ? (
+                      <div className="space-y-4">
+                        <div className="aspect-video bg-accent rounded-lg overflow-hidden">
+                          {!imageErrors[`screenshot-${activeScreenshot}`] ? (
+                            <img
+                              src={game.screenshots[activeScreenshot]}
+                              alt={`Screenshot ${activeScreenshot + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={() => handleImageError(`screenshot-${activeScreenshot}`)}
+                            />
+                          ) : (
+                            <PlaceholderImage className="w-full h-full" />
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-4 gap-2">
+                          {game.screenshots.map((screenshot, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setActiveScreenshot(index)}
+                              className={`aspect-video rounded-md overflow-hidden border-2 ${
+                                index === activeScreenshot ? 'border-primary' : 'border-transparent'
+                              }`}
+                            >
+                              {!imageErrors[`thumb-${index}`] ? (
+                                <img
+                                  src={screenshot}
+                                  alt={`Thumbnail ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                  onError={() => handleImageError(`thumb-${index}`)}
+                                />
+                              ) : (
+                                <PlaceholderImage className="w-full h-full" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        {locale === "zh" ? "暂无游戏截图。" : "No screenshots available."}
+                      </p>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </div>
+              
+              {/* 右侧：游戏预览 */}
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <h3 className="text-lg font-semibold">
+                      {locale === "zh" ? "游戏预览" : "Game Preview"}
                     </h3>
-                  </Link>
-                ))}
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`game-iframe relative ${isFullscreen ? 'w-full h-full' : 'aspect-video rounded-lg overflow-hidden shadow-lg'}`}>
+                      {game.gameUrl ? (
+                        <iframe
+                          src={game.gameUrl}
+                          title={locale === "zh" ? game.title : game.titleEn}
+                          className="w-full h-full border-0"
+                          allowFullScreen
+                        ></iframe>
+                      ) : (
+                        <div className="flex items-center justify-center h-full bg-gray-100 p-8 text-center">
+                          <p className="text-gray-500">
+                            {locale === "zh" ? '游戏暂不可用，请稍后再试。' : 'Game is currently unavailable. Please try again later.'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    <Button 
+                      variant="secondary" 
+                      className="w-full" 
+                      onClick={toggleFullscreen}
+                    >
+                      <Expand className="mr-2 h-4 w-4" />
+                      {locale === "zh" ? "全屏游戏" : "Fullscreen"}
+                    </Button>
+                  </CardContent>
+                </Card>
+                
+                {/* 同类型游戏推荐 */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <h3 className="text-lg font-semibold">
+                      {locale === "zh" ? "你可能也喜欢" : "You May Also Like"}
+                    </h3>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-muted-foreground text-sm">
+                      {locale === "zh" 
+                        ? "正在开发中，敬请期待..."
+                        : "Coming soon..."}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </div>
       </main>
-
-      <Footer />
+      
+      {/* 页脚（非全屏模式时显示） */}
+      {!isFullscreen && <Footer />}
     </div>
   );
 } 

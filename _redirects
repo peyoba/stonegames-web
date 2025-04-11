@@ -1,0 +1,13 @@
+# 将HTTP重定向到HTTPS
+http://aistone.org/* https://aistone.org/:splat 301!
+http://www.aistone.org/* https://aistone.org/:splat 301!
+
+# 将www子域名重定向到根域名
+https://www.aistone.org/* https://aistone.org/:splat 301!
+
+# 处理旧版路径重定向
+/game/* /games/:splat 301
+/category/* /categories/:splat 301
+
+# SPA回退 - 确保路由由Next.js处理
+# /* /index.html 200 

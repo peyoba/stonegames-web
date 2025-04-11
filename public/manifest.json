@@ -1,0 +1,22 @@
+{
+  "name": "Stone Games",
+  "short_name": "SG",
+  "description": "一个简单的游戏导航网站，提供各种有趣的网页游戏。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ],
+  "shortcuts": [],
+  "categories": ["games", "entertainment"],
+  "lang": "zh-CN",
+  "orientation": "any",
+  "prefer_related_applications": false,
+  "scope": "/"
+} 

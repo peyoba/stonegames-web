@@ -1,16 +1,16 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import { type Locale, type Theme } from "@/types"
+import { i18n } from '@/config/i18n'
 
 // 应用状态接口
 interface AppState {
   // 语言设置
-  locale: "en" | "zh"
-  setLocale: (locale: "en" | "zh") => void
+  locale: string
+  setLocale: (locale: string) => void
 
   // 主题设置
-  theme: Theme
-  setTheme: (theme: Theme) => void
+  theme: 'light' | 'dark'
+  setTheme: (theme: 'light' | 'dark') => void
 
   // 侧边栏状态
   isSidebarOpen: boolean
@@ -34,11 +34,11 @@ export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       // 语言设置
-      locale: "en",
+      locale: i18n.defaultLocale,
       setLocale: (locale) => set({ locale }),
 
       // 主题设置
-      theme: "system",
+      theme: 'light',
       setTheme: (theme) => set({ theme }),
 
       // 侧边栏状态

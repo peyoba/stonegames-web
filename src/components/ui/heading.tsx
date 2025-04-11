@@ -1,4 +1,4 @@
-import { forwardRef } from "react"
+import * as React from "react"
 import { cn } from "@/lib/utils"
 
 // 标题组件属性
@@ -16,8 +16,6 @@ export function Heading({
   children,
   ...props
 }: HeadingProps) {
-  const Component = `h${level}` as keyof JSX.IntrinsicElements
-
   const styles = {
     1: "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl",
     2: "scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0",
@@ -27,12 +25,12 @@ export function Heading({
     6: "scroll-m-20 text-base font-semibold tracking-tight",
   }
 
-  return (
-    <Component
-      className={cn(styles[level as keyof typeof styles], className)}
-      {...props}
-    >
-      {children}
-    </Component>
+  return React.createElement(
+    `h${level}`,
+    {
+      className: cn(styles[level as keyof typeof styles], className),
+      ...props
+    },
+    children
   )
 } 

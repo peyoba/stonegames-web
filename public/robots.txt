@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# 禁止爬虫访问管理员页面
+Disallow: /admin/
+Disallow: /api/
+
+# sitemap文件地址
+Sitemap: https://aistone.org/sitemap.xml 

@@ -1,15 +1,17 @@
 // MongoDB 连接测试脚本
 const { PrismaClient } = require('@prisma/client')
+require('dotenv').config({ path: '.env.local' })
+
+const prisma = new PrismaClient()
 
 async function main() {
-  const prisma = new PrismaClient()
+  console.log('正在连接数据库...')
   
   try {
-    console.log('正在连接数据库...')
-    
     // 执行一个简单的查询以测试连接
     const adminCount = await prisma.admin.count()
-    console.log(`数据库连接成功! 管理员数量: ${adminCount}`)
+    console.log('数据库连接成功！')
+    console.log(`当前管理员数量: ${adminCount}`)
     
     // 创建默认管理员（如果不存在）
     const adminExists = await prisma.admin.findFirst({

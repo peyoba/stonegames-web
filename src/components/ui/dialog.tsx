@@ -1,103 +1,102 @@
-import { forwardRef } from "react"
+"use client"
+
+import * as React from "react"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { X } from "lucide-react"
+
 import { cn } from "@/lib/utils"
 
-// 对话框组件属性
-export interface DialogProps extends React.HTMLAttributes<HTMLDivElement> {}
+// 直接从 Radix 导出 Dialog, DialogTrigger, DialogPortal, DialogClose
+const Dialog = DialogPrimitive.Root
 
-/**
- * 对话框组件
- * 用于显示模态框
- */
-const Dialog = forwardRef<HTMLDivElement, DialogProps>(
-  ({ className, ...props }, ref) => (
-    <div
+const DialogTrigger = DialogPrimitive.Trigger
+
+const DialogPortal = DialogPrimitive.Portal
+
+const DialogClose = DialogPrimitive.Close
+
+// DialogOverlay 带样式
+const DialogOverlay = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Overlay>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Overlay
+    ref={ref}
+    className={cn(
+      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      className
+    )}
+    {...props}
+  />
+))
+DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
+
+// DialogContent 带样式和关闭按钮
+const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>>(({ className, children, ...props }, ref) => (
+  <DialogPortal>
+    <DialogOverlay />
+    <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm",
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
         className
       )}
       {...props}
-    />
-  )
+    >
+      {children}
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+        <X className="h-4 w-4" />
+        <span className="sr-only">Close</span>
+      </DialogPrimitive.Close>
+    </DialogPrimitive.Content>
+  </DialogPortal>
+))
+DialogContent.displayName = DialogPrimitive.Content.displayName
+
+// DialogHeader 带样式
+const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)}
+    {...props}
+  />
 )
-Dialog.displayName = "Dialog"
+DialogHeader.displayName = "DialogHeader"
 
-// 对话框内容组件属性
-export interface DialogContentProps extends React.HTMLAttributes<HTMLDivElement> {}
-
-/**
- * 对话框内容组件
- */
-const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        "relative w-full max-w-lg rounded-lg bg-background p-6 shadow-lg",
-        className
-      )}
-      {...props}
-    />
-  )
-)
-DialogContent.displayName = "DialogContent"
-
-// 对话框标题组件属性
-export interface DialogTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {}
-
-/**
- * 对话框标题组件
- */
-const DialogTitle = forwardRef<HTMLHeadingElement, DialogTitleProps>(
-  ({ className, ...props }, ref) => (
-    <h2
-      ref={ref}
-      className={cn("text-lg font-semibold leading-none tracking-tight", className)}
-      {...props}
-    />
-  )
-)
-DialogTitle.displayName = "DialogTitle"
-
-// 对话框描述组件属性
-export interface DialogDescriptionProps
-  extends React.HTMLAttributes<HTMLParagraphElement> {}
-
-/**
- * 对话框描述组件
- */
-const DialogDescription = forwardRef<HTMLParagraphElement, DialogDescriptionProps>(
-  ({ className, ...props }, ref) => (
-    <p
-      ref={ref}
-      className={cn("text-sm text-muted-foreground", className)}
-      {...props}
-    />
-  )
-)
-DialogDescription.displayName = "DialogDescription"
-
-// 对话框底部组件属性
-export interface DialogFooterProps extends React.HTMLAttributes<HTMLDivElement> {}
-
-/**
- * 对话框底部组件
- */
-const DialogFooter = forwardRef<HTMLDivElement, DialogFooterProps>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn("mt-6 flex justify-end space-x-2", className)}
-      {...props}
-    />
-  )
+// DialogFooter 带样式
+const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)}
+    {...props}
+  />
 )
 DialogFooter.displayName = "DialogFooter"
 
+// DialogTitle 带样式
+const DialogTitle = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Title>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Title
+    ref={ref}
+    className={cn("text-lg font-semibold leading-none tracking-tight", className)}
+    {...props}
+  />
+))
+DialogTitle.displayName = DialogPrimitive.Title.displayName
+
+// DialogDescription 带样式
+const DialogDescription = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Description>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Description
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
+))
+DialogDescription.displayName = DialogPrimitive.Description.displayName
+
 export {
   Dialog,
+  DialogPortal, // 导出 Portal 可能有用
+  DialogOverlay,
+  DialogTrigger,
+  DialogClose,
   DialogContent,
+  DialogHeader, // 现在导出了 DialogHeader
+  DialogFooter,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } 

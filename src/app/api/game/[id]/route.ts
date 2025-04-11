@@ -1,37 +1,22 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { connectToDatabase } from '@/lib/mongodb'
+import { ObjectId } from 'mongodb'
 
 /**
- * 获取游戏详情
- * @param request - 请求对象
- * @param params - 路由参数
- * @returns 游戏详情数据
+ * 获取指定ID的游戏详情
+ * @param params 路由参数，包含游戏ID
+ * @returns 游戏详情
  */
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    // 获取游戏详情
-    const game = await prisma.game.findUnique({
-      where: {
-        id: params.id,
-        published: true
-      },
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            nameEn: true
-          }
-        }
-      }
+    const { db } = await connectToDatabase()
+    const game = await db.collection('games').findOne({
+      _id: new ObjectId(params.id)
     })
 
-    // 如果找不到游戏，返回404
     if (!game) {
       return NextResponse.json(
         { error: '游戏不存在' },
@@ -39,13 +24,14 @@ export async function GET(
       )
     }
 
-    // 更新游戏浏览次数
-    await prisma.game.update({
-      where: { id: params.id },
-      data: { views: { increment: 1 } }
-    })
+    // 格式化返回数据
+    const formattedGame = {
+      ...game,
+      id: game._id.toString(),
+      _id: undefined
+    }
 
-    return NextResponse.json(game)
+    return NextResponse.json(formattedGame)
   } catch (error) {
     console.error('获取游戏详情失败:', error)
     return NextResponse.json(
